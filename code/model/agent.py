@@ -32,8 +32,7 @@ class DeepSpeedAgent:
     @torch.no_grad()
     def predict(self):
         self.ds_engine.module.eval()
-        output = self.ds_engine.generate(self.args)
-        return output
+        return self.ds_engine.generate(self.args)
 
     def train_model(self, batch, current_step=0, pbar=None):
         self.ds_engine.module.train()
@@ -48,8 +47,6 @@ class DeepSpeedAgent:
             self.writer.add_scalar('aud_mse_loss', mse_loss[2], current_step)
         elif isinstance(mse_loss, torch.Tensor):
             self.writer.add_scalar('mse_loss', mse_loss, current_step)
-        else:
-            pass
         # self.writer.add_scalar('mse_loss', mse_loss, current_step)
 
         self.ds_engine.backward(loss)
@@ -128,9 +125,6 @@ class DeepSpeedAgent:
                 llama += num_params
             elif 'visual_encoder' in name:
                 imagebind += num_params
-            else:
-                pass
-
             all_param += num_params
             if param.requires_grad:
                 trainable_params += num_params
@@ -144,7 +138,7 @@ class DeepSpeedAgent:
 
     def load_parameters(self, path):
         if os.path.exists(os.path.join(path, 'pytorch_model.pt')):
-            print('loading parameters from {}'.format(self.args['save_path']))
+            print(f"loading parameters from {self.args['save_path']}")
             delta_ckpt = torch.load(f'{path}/pytorch_model.pt', map_location=torch.device('cuda'))
             self.model.load_state_dict(delta_ckpt, strict=False)
 

@@ -44,8 +44,7 @@ class LearnableLogitScaling(nn.Module):
         return torch.clip(self.log_logit_scale.exp(), max=self.max_logit_scale) * x
 
     def extra_repr(self):
-        st = f"logit_scale_init={self.logit_scale_init},learnable={self.learnable}, max_logit_scale={self.max_logit_scale}"
-        return st
+        return f"logit_scale_init={self.logit_scale_init},learnable={self.learnable}, max_logit_scale={self.max_logit_scale}"
 
 
 class EinOpsRearrange(nn.Module):
@@ -66,17 +65,10 @@ class VerboseNNModule(nn.Module):
 
     @staticmethod
     def get_readable_tensor_repr(name: str, tensor: torch.Tensor) -> str:
-        st = (
-            "("
-            + name
-            + "): "
-            + "tensor("
-            + str(tuple(tensor[1].shape))
-            + ", requires_grad="
-            + str(tensor[1].requires_grad)
+        return (
+            f"({name}): tensor({tuple(tensor[1].shape)}, requires_grad={str(tensor[1].requires_grad)}"
             + ")\n"
         )
-        return st
 
     def extra_repr(self) -> str:
         named_modules = set()

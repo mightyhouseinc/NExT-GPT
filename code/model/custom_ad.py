@@ -125,7 +125,6 @@ class AudioLDMPipeline(DiffusionPipeline):
             cpu_offload(cpu_offloaded_model, device)
 
     @property
-    # Copied from diffusers.pipelines.stable_diffusion.pipeline_stable_diffusion.StableDiffusionPipeline._execution_device
     def _execution_device(self):
         r"""
         Returns the device on which the pipeline's models will be executed. After calling
@@ -134,14 +133,18 @@ class AudioLDMPipeline(DiffusionPipeline):
         """
         if not hasattr(self.unet, "_hf_hook"):
             return self.device
-        for module in self.unet.modules():
-            if (
-                hasattr(module, "_hf_hook")
-                and hasattr(module._hf_hook, "execution_device")
-                and module._hf_hook.execution_device is not None
-            ):
-                return torch.device(module._hf_hook.execution_device)
-        return self.device
+        return next(
+            (
+                torch.device(module._hf_hook.execution_device)
+                for module in self.unet.modules()
+                if (
+                    hasattr(module, "_hf_hook")
+                    and hasattr(module._hf_hook, "execution_device")
+                    and module._hf_hook.execution_device is not None
+                )
+            ),
+            self.device,
+        )
 
     def _encode_prompt(
         self,
@@ -284,8 +287,7 @@ class AudioLDMPipeline(DiffusionPipeline):
 
     def decode_latents(self, latents):
         latents = 1 / self.vae.config.scaling_factor * latents
-        mel_spectrogram = self.vae.decode(latents).sample
-        return mel_spectrogram
+        return self.vae.decode(latents).sample
 
     def mel_spectrogram_to_waveform(self, mel_spectrogram):
         if mel_spectrogram.dim() == 4:
@@ -338,8 +340,10 @@ class AudioLDMPipeline(DiffusionPipeline):
                 f"{self.vae_scale_factor}."
             )
 
-        if (callback_steps is None) or (
-            callback_steps is not None and (not isinstance(callback_steps, int) or callback_steps <= 0)
+        if (
+            callback_steps is None
+            or not isinstance(callback_steps, int)
+            or callback_steps <= 0
         ):
             raise ValueError(
                 f"`callback_steps` has to be a positive integer but is {callback_steps} of type"
@@ -601,7 +605,4 @@ class AudioLDMPipeline(DiffusionPipeline):
         if output_type == "np":
             audio = audio.numpy()
 
-        if not return_dict:
-            return (audio,)
-
-        return AudioPipelineOutput(audios=audio)
+        return (audio, ) if not return_dict else AudioPipelineOutput(audios=audio)

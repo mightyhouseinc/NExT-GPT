@@ -28,32 +28,35 @@ RESPONSE_TEMPLATE = ['Sure, this is the {} you want.', 'Here is a {} for your re
 def load_audiocap(data_path, save_dir):
     with open(data_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
-    print('the total instance is {}'.format(len(data)))
+    print(f'the total instance is {len(data)}')
     res = []
     for row in tqdm(data, total=len(data)):
         audio_id, one_caption = row["audio_name"], row["caption"]
-        _temp = {}
         instruction = INSTRUCTION_PROMPT[random.randint(0, 1)]
         produce_kw = PRODUCE_KEYWORDS[random.randint(0, len(PRODUCE_KEYWORDS) - 1)]
         audio_kw = AUDIO_KEYWORDS[random.randint(0, len(AUDIO_KEYWORDS) - 1)]
 
-        _temp['image_name'] = audio_id
-        _temp['output_modality'] = 'audio'
-        conversation = []
-
+        _temp = {'image_name': audio_id, 'output_modality': 'audio'}
         _temp_idx = random.randint(0, len(RESPONSE_TEMPLATE) - 1)
-        response = RESPONSE_TEMPLATE[_temp_idx].format(audio_kw) if _temp_idx == 0 or _temp_idx == 1 else RESPONSE_TEMPLATE[_temp_idx]
-        conversation.append(
-            {'from': 'human',
-             'value': instruction.format(produce_kw, audio_kw) + one_caption,
-             'input_modality': 'text'}
+        response = (
+            RESPONSE_TEMPLATE[_temp_idx].format(audio_kw)
+            if _temp_idx in {0, 1}
+            else RESPONSE_TEMPLATE[_temp_idx]
         )
-        conversation.append(
-            {'from': 'gpt',
-             'value': response,
-             'caption': one_caption,
-             'output_modality': 'audio'}
-        )
+        conversation = [
+            {
+                'from': 'human',
+                'value': instruction.format(produce_kw, audio_kw)
+                + one_caption,
+                'input_modality': 'text',
+            },
+            {
+                'from': 'gpt',
+                'value': response,
+                'caption': one_caption,
+                'output_modality': 'audio',
+            },
+        ]
         _temp['conversation'] = conversation
         res.append(_temp)
     if not os.path.exists(save_dir):
@@ -66,7 +69,7 @@ def load_audiocap(data_path, save_dir):
 def load_webvid(data_path, sample_number=1000, save_dir=''):
     with open(data_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
-    print('the total instance is {}'.format(len(data)))
+    print(f'the total instance is {len(data)}')
     data = random.sample(data, sample_number)
     res = []
     for row in tqdm(data, total=len(data)):
@@ -77,20 +80,26 @@ def load_webvid(data_path, sample_number=1000, save_dir=''):
         video_kw = VIDEO_KEYWORDS[random.randint(0, len(VIDEO_KEYWORDS) - 1)]
         _temp['image_name'] = video_name
         _temp['output_modality'] = 'video'
-        conversation = []
         _temp_idx = random.randint(0, len(RESPONSE_TEMPLATE) - 1)
-        response = RESPONSE_TEMPLATE[_temp_idx].format(video_kw) if _temp_idx == 0 or _temp_idx == 1 else RESPONSE_TEMPLATE[_temp_idx]
-        conversation.append(
-            {'from': 'human',
-             'value': instruction.format(produce_kw, video_kw) + one_caption,
-             'input_modality': 'text'}
+        response = (
+            RESPONSE_TEMPLATE[_temp_idx].format(video_kw)
+            if _temp_idx in {0, 1}
+            else RESPONSE_TEMPLATE[_temp_idx]
         )
-        conversation.append(
-            {'from': 'gpt',
-             'value': response,
-             'caption': one_caption,
-             'output_modality': 'video'}
-        )
+        conversation = [
+            {
+                'from': 'human',
+                'value': instruction.format(produce_kw, video_kw)
+                + one_caption,
+                'input_modality': 'text',
+            },
+            {
+                'from': 'gpt',
+                'value': response,
+                'caption': one_caption,
+                'output_modality': 'video',
+            },
+        ]
         _temp['conversation'] = conversation
         res.append(_temp)
     if not os.path.exists(save_dir):
@@ -103,7 +112,7 @@ def load_webvid(data_path, sample_number=1000, save_dir=''):
 def load_cc3m(data_path, sample_number=1000, save_dir=''):
     with open(data_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
-    print('the total instance is {}'.format(len(data)))
+    print(f'the total instance is {len(data)}')
     data = random.sample(data, sample_number)
     res = []
     for row in tqdm(data, total=len(data)):
@@ -115,20 +124,26 @@ def load_cc3m(data_path, sample_number=1000, save_dir=''):
 
         _temp['image_name'] = image_name
         _temp['output_modality'] = 'image'
-        conversation = []
         _temp_idx = random.randint(0, len(RESPONSE_TEMPLATE) - 1)
-        response = RESPONSE_TEMPLATE[_temp_idx].format(image_kw) if _temp_idx == 0 or _temp_idx == 1 else RESPONSE_TEMPLATE[_temp_idx]
-        conversation.append(
-            {'from': 'human',
-             'value': instruction.format(produce_kw, image_kw) + one_caption,
-             'input_modality': 'text'}
+        response = (
+            RESPONSE_TEMPLATE[_temp_idx].format(image_kw)
+            if _temp_idx in {0, 1}
+            else RESPONSE_TEMPLATE[_temp_idx]
         )
-        conversation.append(
-            {'from': 'gpt',
-             'value': response,
-             'caption': one_caption,
-             'output_modality': 'image'}
-        )
+        conversation = [
+            {
+                'from': 'human',
+                'value': instruction.format(produce_kw, image_kw)
+                + one_caption,
+                'input_modality': 'text',
+            },
+            {
+                'from': 'gpt',
+                'value': response,
+                'caption': one_caption,
+                'output_modality': 'image',
+            },
+        ]
         _temp['conversation'] = conversation
         res.append(_temp)
     if not os.path.exists(save_dir):
@@ -141,25 +156,26 @@ def load_cc3m(data_path, sample_number=1000, save_dir=''):
 def load_alpaca(data_path, sample_numer=1000, save_dir=''):
     with open(data_path, 'r') as f:
         data = json.load(f)
-    print('the total instance is {}'.format(len(data)))
+    print(f'the total instance is {len(data)}')
     res = []
     for d in data:
         _temp = dict()
         _temp['image_name'] = '00000000000'
         _temp['output_modality'] = 'text'
-        conversation = []
+        conversation = [
+            {
+                'from': 'human',
+                'value': d['instruction'] + d['input'],
+                'input_modality': 'text',
+            },
+            {
+                'from': 'gpt',
+                'value': d['output'],
+                'caption': '',
+                'output_modality': 'text',
+            },
+        ]
 
-        conversation.append(
-            {'from': 'human',
-             'value': d['instruction'] + d['input'],
-             'input_modality': 'text'}
-        )
-        conversation.append(
-            {'from': 'gpt',
-             'value': d['output'],
-             'caption': '',
-             'output_modality': 'text'}
-        )
         _temp['conversation'] = conversation
         res.append(_temp)
     if not os.path.exists(save_dir):
@@ -173,7 +189,7 @@ def load_alpaca(data_path, sample_numer=1000, save_dir=''):
 def load_llava(data_path, sample_numer, save_dir=''):
     with open(data_path, 'r') as f:
         data = json.load(f)
-    print('the total instance is {}'.format(len(data)))
+    print(f'the total instance is {len(data)}')
     # res = random.sample(data, sample_numer)
     res = data
     save_path = os.path.join(save_dir, os.path.basename(data_path))
@@ -246,13 +262,13 @@ class InstructionDataset(BaseDataset):
 
     def __getitem__(self, i):
 
-        with open(os.path.join(self.embed_path, str(self.video_path_list[i]) + '.npy'), 'rb') as f:
+        with open(os.path.join(self.embed_path, f'{str(self.video_path_list[i])}.npy'), 'rb') as f:
             video_clip_embs = torch.from_numpy(np.load(f, allow_pickle=True))  # (num_clip_tokens, 768)
 
-        with open(os.path.join(self.embed_path, str(self.image_path_list[i]) + '.npy'), 'rb') as f:
+        with open(os.path.join(self.embed_path, f'{str(self.image_path_list[i])}.npy'), 'rb') as f:
             image_clip_embs = torch.from_numpy(np.load(f, allow_pickle=True))  # (num_clip_tokens, 768)
 
-        with open(os.path.join(self.embed_path, str(self.audio_path_list[i]) + '.npy'), 'rb') as f:
+        with open(os.path.join(self.embed_path, f'{str(self.audio_path_list[i])}.npy'), 'rb') as f:
             audio_clip_embs = torch.from_numpy(np.load(f, allow_pickle=True))  # (1, 512)
 
         return dict(text_path_list=self.text_path_list[i], output_texts=self.text_caption_list[i], visual_QA_list=self.visual_QA_list[i],
@@ -303,7 +319,7 @@ if __name__ == '__main__':
     data = load_llava('../../data/IT_data/llava/llava_instruct_150k.json', sample_number, save_dir)
     # res.extend(data)
 
-    print('The total instance is {}\n'.format(len(res)))
+    print(f'The total instance is {len(res)}\n')
     random.shuffle(res)
     with open(os.path.join(save_dir, 'instruction_data.json'), 'w', encoding='utf-8') as f:
         json.dump(res, f, indent=4)

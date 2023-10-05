@@ -264,11 +264,10 @@ def uniform_crop(images, size, spatial_idx, boxes=None, scale_size=None):
             y_offset = 0
         elif spatial_idx == 2:
             y_offset = height - size
-    else:
-        if spatial_idx == 0:
-            x_offset = 0
-        elif spatial_idx == 2:
-            x_offset = width - size
+    elif spatial_idx == 0:
+        x_offset = 0
+    elif spatial_idx == 2:
+        x_offset = width - size
     cropped = images[:, :, y_offset : y_offset + size, x_offset : x_offset + size]
     cropped_boxes = crop_boxes(boxes, x_offset, y_offset) if boxes is not None else None
     if ndim == 3:
@@ -306,16 +305,20 @@ class SpatialCrop(nn.Module):
                 to C, T_I_V_A.txt, H', W' by spatial cropping.
         """
         assert isinstance(videos, list), "Must be a list of videos after temporal crops"
-        assert all([video.ndim == 4 for video in videos]), "Must be (C,T_I_V_A.txt,H,W)"
+        assert all(video.ndim == 4 for video in videos), "Must be (C,T_I_V_A.txt,H,W)"
         res = []
         for video in videos:
-            for spatial_idx in self.crops_to_ext:
-                res.append(uniform_crop(video, self.crop_size, spatial_idx)[0])
+            res.extend(
+                uniform_crop(video, self.crop_size, spatial_idx)[0]
+                for spatial_idx in self.crops_to_ext
+            )
             if not self.flipped_crops_to_ext:
                 continue
             flipped_video = transforms.functional.hflip(video)
-            for spatial_idx in self.flipped_crops_to_ext:
-                res.append(uniform_crop(flipped_video, self.crop_size, spatial_idx)[0])
+            res.extend(
+                uniform_crop(flipped_video, self.crop_size, spatial_idx)[0]
+                for spatial_idx in self.flipped_crops_to_ext
+            )
         return res
 
 

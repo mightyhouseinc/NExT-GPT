@@ -41,19 +41,18 @@ def build_one_instance_for_pgpt4(tokenizer, conversation):
             one_input_id = tokenizer(text, add_special_tokens=False).input_ids
             input_ids += one_input_id
             target_ids += [-100] * len(one_input_id)  # do not perform loss regression on human prompt
+        elif role == 'gpt':
+            text = turn['value'] + '\n###'
+            one_input_id = tokenizer(text, add_special_tokens=False).input_ids
+            input_ids += one_input_id
+            target_ids += one_input_id
+        elif role == 'human':
+            text = 'Human: ' + turn['value'] + '\n### Assistant: '
+            one_input_id = tokenizer(text, add_special_tokens=False).input_ids
+            input_ids += one_input_id
+            target_ids += [-100] * len(one_input_id)
         else:
-            if role == 'human':
-                text = 'Human: ' + turn['value'] + '\n### Assistant: '
-                one_input_id = tokenizer(text, add_special_tokens=False).input_ids
-                input_ids += one_input_id
-                target_ids += [-100] * len(one_input_id)
-            elif role == 'gpt':
-                text = turn['value'] + '\n###'
-                one_input_id = tokenizer(text, add_special_tokens=False).input_ids
-                input_ids += one_input_id
-                target_ids += one_input_id
-            else:
-                raise Exception('Wrong Role!!!')
+            raise Exception('Wrong Role!!!')
         text_list.append(text)
         assert len(input_ids) == len(target_ids)
     return text_list, input_ids, target_ids
@@ -72,28 +71,22 @@ def build_one_instance_for_cc3m(tokenizer, conversation):
             one_input_id = tokenizer(text, add_special_tokens=False).input_ids
             input_ids += one_input_id
             target_ids += [-100] * len(one_input_id)  # do not perform loss regression on human prompt
-        else:
-            if role == 'human':
-                text = 'Human: ' + turn['value'] + '\n### Assistant: '
-                one_input_id = tokenizer(text, add_special_tokens=False).input_ids
-                input_ids += one_input_id
-                target_ids += [-100] * len(one_input_id)
-            elif role == 'gpt':
-                if 'image_name' in turn.keys():
-                    img_tokens = ' '.join([f'[IMG{i}]' for i in range(8)])
-                    text = turn['value'] + ' ' + img_tokens + '\n###'
-                else:
-                    text = turn['value'] + '\n###'
-                one_input_id = tokenizer(text, add_special_tokens=False).input_ids
-                input_ids += one_input_id
-                target_ids += one_input_id
-                # if 'image_name' in turn.keys():
-                #     img_tokens = ' '.join([f'[IMG{i}]' for i in range(8)])
-                #     img_input_ids = tokenizer(img_tokens, add_special_tokens=False).input_ids
-                #     input_ids += img_input_ids
-                #     target_ids += img_input_ids
+        elif role == 'gpt':
+            if 'image_name' in turn.keys():
+                img_tokens = ' '.join([f'[IMG{i}]' for i in range(8)])
+                text = turn['value'] + ' ' + img_tokens + '\n###'
             else:
-                raise Exception('Wrong Role!!!')
+                text = turn['value'] + '\n###'
+            one_input_id = tokenizer(text, add_special_tokens=False).input_ids
+            input_ids += one_input_id
+            target_ids += one_input_id
+        elif role == 'human':
+            text = 'Human: ' + turn['value'] + '\n### Assistant: '
+            one_input_id = tokenizer(text, add_special_tokens=False).input_ids
+            input_ids += one_input_id
+            target_ids += [-100] * len(one_input_id)
+        else:
+            raise Exception('Wrong Role!!!')
         text_list.append(text)
         assert len(input_ids) == len(target_ids)
     return text_list, input_ids, target_ids
@@ -113,36 +106,29 @@ def build_one_instance_for_cc3m_1(tokenizer, conversation, num_img_tokens=8):
             one_input_id = tokenizer(text, add_special_tokens=False).input_ids
             input_ids += one_input_id
             target_ids += one_input_id  # do not perform loss regression on human prompt
+        elif role == 'gpt':
+            # if 'image_name' in turn.keys():
+            #     img_tokens = ' '.join([f'[IMG{i}]' for i in range(num_img_tokens)])
+            #     text = turn['value'] + img_tokens
+            # else:
+            #     text = turn['value']
+            text = ' '.join([f'[IMG{i}]' for i in range(num_img_tokens)])
+            one_input_id = tokenizer(text, add_special_tokens=False).input_ids
+            input_ids += one_input_id
+            target_ids += one_input_id
+        elif role == 'human':
+            text = turn['value']
+            one_input_id = tokenizer(text, add_special_tokens=False).input_ids
+            input_ids += one_input_id
+            target_ids += one_input_id
         else:
-            if role == 'human':
-                text = turn['value']
-                one_input_id = tokenizer(text, add_special_tokens=False).input_ids
-                input_ids += one_input_id
-                target_ids += one_input_id
-            elif role == 'gpt':
-                # if 'image_name' in turn.keys():
-                #     img_tokens = ' '.join([f'[IMG{i}]' for i in range(num_img_tokens)])
-                #     text = turn['value'] + img_tokens
-                # else:
-                #     text = turn['value']
-                text = ' '.join([f'[IMG{i}]' for i in range(num_img_tokens)])
-                one_input_id = tokenizer(text, add_special_tokens=False).input_ids
-                input_ids += one_input_id
-                target_ids += one_input_id
-                # if 'image_name' in turn.keys():
-                #     img_tokens = ' '.join([f'[IMG{i}]' for i in range(8)])
-                #     img_input_ids = tokenizer(img_tokens, add_special_tokens=False).input_ids
-                #     input_ids += img_input_ids
-                #     target_ids += img_input_ids
-            else:
-                raise Exception('Wrong Role!!!')
+            raise Exception('Wrong Role!!!')
         text_list.append(text)
         assert len(input_ids) == len(target_ids)
     return text_list, input_ids, target_ids
 
 
 def build_one_instance_for_webvid(tokenizer, conversation, num_video_tokens=8):
-    text_list = []
     input_ids, target_ids = [], []
 
     # text = '### Human: ' + conversation + '\n### Assistant: '
@@ -152,7 +138,7 @@ def build_one_instance_for_webvid(tokenizer, conversation, num_video_tokens=8):
 
     video_tokens = ' '.join([f'[VID{i}]' for i in range(num_video_tokens)])
     text = conversation + video_tokens
-    text_list.append(text)
+    text_list = [text]
     one_input_id = tokenizer(text, add_special_tokens=False).input_ids
     input_ids += one_input_id
     target_ids += one_input_id
@@ -167,7 +153,7 @@ def process_batch_instance(tokenizer, batch_of_conversations, max_tgt_len, datas
     for conversation in batch_of_conversations:
         if dataset == "pgpt4":
             _, one_input_ids, one_target_ids = build_one_instance_for_pgpt4(tokenizer, conversation)
-        elif dataset == 'cc3m' or dataset == 'coco2017':
+        elif dataset in ['cc3m', 'coco2017']:
             _, one_input_ids, one_target_ids = build_one_instance_for_cc3m_1(tokenizer, conversation, num_img_tokens)
         elif dataset == 'webvid':
             _, one_input_ids, one_target_ids = build_one_instance_for_webvid(tokenizer, conversation, num_video_tokens)
@@ -198,7 +184,7 @@ def mask_token(inputs, tokenizer, mlm_probability, vocab_size=None, special_toke
 def build_one_instance_stage_1(tokenizer, captions, prompt=''):
     input_ids, target_ids = [], []
     texts = ''
-    text = '</Img> ' + prompt + '\n### Assistant: '
+    text = f'</Img> {prompt}' + '\n### Assistant: '
     texts += text
     one_input_id = tokenizer(text, add_special_tokens=False).input_ids
     input_ids += one_input_id
@@ -287,35 +273,35 @@ def build_one_instance_stage_3(tokenizer, conversation, img_tokens=4, vid_tokens
         role = turn['from']
         if i == 0:  # the first human turn
             assert role == 'human'
-            if turn['input_modality'] != 'text':
-                text = '</Img> ' + turn['value'] + '\n### Assistant: '
-            else:
-                text = turn['value'] + '\n### Assistant: '
+            text = (
+                '</Img> ' + turn['value'] + '\n### Assistant: '
+                if turn['input_modality'] != 'text'
+                else turn['value'] + '\n### Assistant: '
+            )
             one_input_id = tokenizer(text, add_special_tokens=False).input_ids
             input_ids += one_input_id
             target_ids += [-100] * len(one_input_id)  # do not perform loss regression on human prompt
-        else:
-            if role == 'human':
-                text = 'Human: ' + turn['value'] + '\n### Assistant: '
-                one_input_id = tokenizer(text, add_special_tokens=False).input_ids
-                input_ids += one_input_id
-                target_ids += [-100] * len(one_input_id)
-            elif role == 'gpt':
-                if turn['output_modality'] == 'image':
-                    signal_tokens = ' '.join([f'[IMG{i}]' for i in range(img_tokens)])
-                elif turn['output_modality'] == 'video':
-                    signal_tokens = ' '.join([f'[VID{i}]' for i in range(vid_tokens)])
-                elif turn['output_modality'] == 'audio':
-                    signal_tokens = ' '.join([f'[AUD{i}]' for i in range(aud_tokens)])
-                else:
-                    signal_tokens = ''
-                caption = turn['caption']
-                text = turn['value'] + signal_tokens + '\n###'
-                one_input_id = tokenizer(text, add_special_tokens=False).input_ids
-                input_ids += one_input_id
-                target_ids += one_input_id
+        elif role == 'gpt':
+            if turn['output_modality'] == 'image':
+                signal_tokens = ' '.join([f'[IMG{i}]' for i in range(img_tokens)])
+            elif turn['output_modality'] == 'video':
+                signal_tokens = ' '.join([f'[VID{i}]' for i in range(vid_tokens)])
+            elif turn['output_modality'] == 'audio':
+                signal_tokens = ' '.join([f'[AUD{i}]' for i in range(aud_tokens)])
             else:
-                raise Exception('Wrong Role!!!')
+                signal_tokens = ''
+            caption = turn['caption']
+            text = turn['value'] + signal_tokens + '\n###'
+            one_input_id = tokenizer(text, add_special_tokens=False).input_ids
+            input_ids += one_input_id
+            target_ids += one_input_id
+        elif role == 'human':
+            text = 'Human: ' + turn['value'] + '\n### Assistant: '
+            one_input_id = tokenizer(text, add_special_tokens=False).input_ids
+            input_ids += one_input_id
+            target_ids += [-100] * len(one_input_id)
+        else:
+            raise Exception('Wrong Role!!!')
         text_list.append(text)
         assert len(input_ids) == len(target_ids)
     return text_list, input_ids, target_ids, caption

@@ -53,45 +53,42 @@ def predict(
                 prompt_text += f'{q}\n### Assistant: {a}\n###'
             else:
                 prompt_text += f' Human: {q}\n### Assistant: {a}\n###'
-        prompt_text += f'### Human: {input}'
-    else:
-        prompt_text += f'### Human: {input}'
-
+    prompt_text += f'### Human: {input}'
     print('prompt_text: ', prompt_text)
 
-    response = model.generate({
-        'prompt': prompt_text,
-        'image_paths': [image_path] if image_path else [],
-        'audio_paths': [audio_path] if audio_path else [],
-        'video_paths': [video_path] if video_path else [],
-        'thermal_paths': [thermal_path] if thermal_path else [],
-        'top_p': top_p,
-        'temperature': temperature,
-        'max_tgt_len': max_tgt_len,
-        'modality_embeds': modality_cache,
-        'filter_value': filter_value, 'min_word_tokens': min_word_tokens,
-        'gen_scale_factor': gen_scale_factor, 'max_num_imgs': max_num_imgs,
-        'stops_id': stops_id,
-        'load_sd': load_sd,
-        'generator': generator,
-        'guidance_scale_for_img': guidance_scale_for_img,
-        'num_inference_steps_for_img': num_inference_steps_for_img,
-
-        'guidance_scale_for_vid': guidance_scale_for_vid,
-        'num_inference_steps_for_vid': num_inference_steps_for_vid,
-        'max_num_vids': max_num_vids,
-        'height': height,
-        'width': width,
-        'num_frames': num_frames,
-
-        'guidance_scale_for_aud': guidance_scale_for_aud,
-        'num_inference_steps_for_aud': num_inference_steps_for_aud,
-        'max_num_auds': max_num_auds,
-        'audio_length_in_s': audio_length_in_s,
-        'ENCOUNTERS': ENCOUNTERS,
-
-    })
-    return response
+    return model.generate(
+        {
+            'prompt': prompt_text,
+            'image_paths': [image_path] if image_path else [],
+            'audio_paths': [audio_path] if audio_path else [],
+            'video_paths': [video_path] if video_path else [],
+            'thermal_paths': [thermal_path] if thermal_path else [],
+            'top_p': top_p,
+            'temperature': temperature,
+            'max_tgt_len': max_tgt_len,
+            'modality_embeds': modality_cache,
+            'filter_value': filter_value,
+            'min_word_tokens': min_word_tokens,
+            'gen_scale_factor': gen_scale_factor,
+            'max_num_imgs': max_num_imgs,
+            'stops_id': stops_id,
+            'load_sd': load_sd,
+            'generator': generator,
+            'guidance_scale_for_img': guidance_scale_for_img,
+            'num_inference_steps_for_img': num_inference_steps_for_img,
+            'guidance_scale_for_vid': guidance_scale_for_vid,
+            'num_inference_steps_for_vid': num_inference_steps_for_vid,
+            'max_num_vids': max_num_vids,
+            'height': height,
+            'width': width,
+            'num_frames': num_frames,
+            'guidance_scale_for_aud': guidance_scale_for_aud,
+            'num_inference_steps_for_aud': num_inference_steps_for_aud,
+            'max_num_auds': max_num_auds,
+            'audio_length_in_s': audio_length_in_s,
+            'ENCOUNTERS': ENCOUNTERS,
+        }
+    )
 
 
 if __name__ == '__main__':
@@ -125,7 +122,7 @@ if __name__ == '__main__':
     model.load_state_dict(delta_ckpt, strict=False)
     model = model.eval().half().cuda()
     # model = model.eval().cuda()
-    print(f'[!] init the 7b model over ...')
+    print('[!] init the 7b model over ...')
 
     """Override Chatbot.postprocess"""
     max_tgt_length = 150
@@ -169,19 +166,17 @@ if __name__ == '__main__':
                     m[0].save(f'./assets/images/{prompt}.jpg')
 
         elif 'vid' in i.keys():
-            for idx, m in enumerate(i['vid']):
+            for m in i['vid']:
                 if isinstance(m, str):
                     print(m)
                 else:
                     video_path = export_to_video(video_frames=m, output_video_path=f'./assets/videos/{prompt}.mp4')
                     print("video_path: ", video_path)
         elif 'aud' in i.keys():
-            for idx, m in enumerate(i['aud']):
+            for m in i['aud']:
                 if isinstance(m, str):
                     print(m)
                 else:
                     audio_path = f'./assets/audios/{prompt}.wav'
                     scipy.io.wavfile.write(audio_path, rate=16000, data=m)
                     print("video_path: ", audio_path)
-        else:
-            pass

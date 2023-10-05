@@ -54,9 +54,7 @@ def config_env(args):
 
 
 def build_directory(path):
-    if os.path.exists(path):
-        pass
-    else:  # recursively construct directory
+    if not os.path.exists(path):
         os.makedirs(path, exist_ok=True)
 
 
@@ -94,7 +92,7 @@ def main(**args):
     # begin to train
     pbar = tqdm(total=length)  # maximum total number
     current_step = 0
-    for epoch_i in tqdm(range(args['epochs'])):
+    for _ in tqdm(range(args['epochs'])):
         # for train_iter in train_iter_list:
         for batch in train_iter:
             agent.train_model(

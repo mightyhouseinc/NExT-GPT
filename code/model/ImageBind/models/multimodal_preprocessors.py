@@ -70,7 +70,7 @@ def interpolate_pos_encoding(
     input_shape=None,
     first_patch_idx=1,
 ):
-    assert first_patch_idx == 0 or first_patch_idx == 1, "there is 1 CLS token or none"
+    assert first_patch_idx in [0, 1], "there is 1 CLS token or none"
     N = pos_embed.shape[1] - first_patch_idx  # since it's 1 if cls_token exists
     if npatch_per_img == N:
         return pos_embed
@@ -127,12 +127,7 @@ class PatchEmbedGeneric(nn.Module):
     def __init__(self, proj_stem, norm_layer: Optional[nn.Module] = None):
         super().__init__()
 
-        if len(proj_stem) > 1:
-            self.proj = nn.Sequential(*proj_stem)
-        else:
-            # Special case to be able to load pre-trained models that were
-            # trained with a standard stem
-            self.proj = proj_stem[0]
+        self.proj = nn.Sequential(*proj_stem) if len(proj_stem) > 1 else proj_stem[0]
         self.norm_layer = norm_layer
 
     def get_patch_layout(self, img_size):
@@ -290,13 +285,12 @@ class RGBDTPreprocessor(VerboseNNModule):
             final_tokens = vision_tokens + depth_tokens
         else:
             final_tokens = vision_tokens if vision is not None else depth_tokens
-        return_dict = {
+        return {
             "trunk": {
                 "tokens": final_tokens,
             },
             "head": {},
         }
-        return return_dict
 
 
 class AudioPreprocessor(RGBDTPreprocessor):
@@ -352,7 +346,7 @@ class TextPreprocessor(VerboseNNModule):
         self.num_cls_tokens = num_cls_tokens
         self.embed_dim = embed_dim
         if num_cls_tokens > 0:
-            assert self.causal_masking is False, "Masking + CLS token isn't implemented"
+            assert not self.causal_masking, "Masking + CLS token isn't implemented"
             self.cls_token = nn.Parameter(
                 torch.zeros(1, self.num_cls_tokens, embed_dim)
             )
@@ -366,10 +360,10 @@ class TextPreprocessor(VerboseNNModule):
         nn.init.normal_(self.pos_embed, std=0.01)
 
         if init_param_style == "openclip":
-            # OpenCLIP style initialization
-            scale = self.embed_dim**-0.5
             if self.num_cls_tokens > 0:
                 nn.init.normal_(self.cls_token)
+                # OpenCLIP style initialization
+                scale = self.embed_dim**-0.5
                 self.cls_token *= scale
         elif init_param_style == "vit":
             self.cls_token.data.fill_(0)
@@ -506,9 +500,8 @@ class SimpleTokenizer(object):
         merges = merges[1 : 49152 - 256 - 2 + 1]
         merges = [tuple(merge.split()) for merge in merges]
         vocab = list(bytes_to_unicode().values())
-        vocab = vocab + [v + "</w>" for v in vocab]
-        for merge in merges:
-            vocab.append("".join(merge))
+        vocab += [f"{v}</w>" for v in vocab]
+        vocab.extend("".join(merge) for merge in merges)
         vocab.extend(["<|startoftext|>", "<|endoftext|>"])
         self.encoder = dict(zip(vocab, range(len(vocab))))
         self.decoder = {v: k for k, v in self.encoder.items()}
@@ -526,11 +519,11 @@ class SimpleTokenizer(object):
     def bpe(self, token):
         if token in self.cache:
             return self.cache[token]
-        word = tuple(token[:-1]) + (token[-1] + "</w>",)
+        word = tuple(token[:-1]) + (f"{token[-1]}</w>", )
         pairs = get_pairs(word)
 
         if not pairs:
-            return token + "</w>"
+            return f"{token}</w>"
 
         while True:
             bigram = min(pairs, key=lambda pair: self.bpe_ranks.get(pair, float("inf")))
@@ -576,12 +569,11 @@ class SimpleTokenizer(object):
 
     def decode(self, tokens):
         text = "".join([self.decoder[token] for token in tokens])
-        text = (
+        return (
             bytearray([self.byte_decoder[c] for c in text])
             .decode("utf-8", errors="replace")
             .replace("</w>", " ")
         )
-        return text
 
     def __call__(self, texts, context_length=None):
         if not context_length:
@@ -599,9 +591,7 @@ class SimpleTokenizer(object):
             tokens = tokens[:context_length]
             result[i, : len(tokens)] = torch.tensor(tokens)
 
-        if len(result) == 1:
-            return result[0]
-        return result
+        return result[0] if len(result) == 1 else result
 
 
 class IMUPreprocessor(VerboseNNModule):
@@ -638,11 +628,11 @@ class IMUPreprocessor(VerboseNNModule):
         nn.init.normal_(self.pos_embed, std=0.01)
 
         if init_param_style == "openclip":
-            # OpenCLIP style initialization
-            scale = self.embed_dim**-0.5
-
             if self.num_cls_tokens > 0:
                 nn.init.normal_(self.cls_token)
+                # OpenCLIP style initialization
+                scale = self.embed_dim**-0.5
+
                 self.cls_token *= scale
         elif init_param_style == "vit":
             self.cls_token.data.fill_(0)
@@ -678,10 +668,9 @@ class IMUPreprocessor(VerboseNNModule):
             self.imu_stem,
         )
 
-        return_dict = {
+        return {
             "trunk": {
                 "tokens": imu_tokens,
             },
             "head": {},
         }
-        return return_dict
