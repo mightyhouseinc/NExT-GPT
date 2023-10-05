@@ -384,13 +384,13 @@ class ImageBindModel(nn.Module):
         thermal_embed_dim,
         imu_embed_dim,
     ):
-        modality_heads = {}
-
-        modality_heads[ModalityType.VISION] = nn.Sequential(
-            nn.LayerNorm(normalized_shape=vision_embed_dim, eps=1e-6),
-            SelectElement(index=0),
-            nn.Linear(vision_embed_dim, out_embed_dim, bias=False),
-        )
+        modality_heads = {
+            ModalityType.VISION: nn.Sequential(
+                nn.LayerNorm(normalized_shape=vision_embed_dim, eps=1e-6),
+                SelectElement(index=0),
+                nn.Linear(vision_embed_dim, out_embed_dim, bias=False),
+            )
+        }
 
         modality_heads[ModalityType.TEXT] = SelectEOSAndProject(
             proj=nn.Sequential(
@@ -427,9 +427,8 @@ class ImageBindModel(nn.Module):
         return nn.ModuleDict(modality_heads)
 
     def _create_modality_postprocessors(self, out_embed_dim):
-        modality_postprocessors = {}
+        modality_postprocessors = {ModalityType.VISION: Normalize(dim=-1)}
 
-        modality_postprocessors[ModalityType.VISION] = Normalize(dim=-1)
         modality_postprocessors[ModalityType.TEXT] = nn.Sequential(
             Normalize(dim=-1), LearnableLogitScaling(learnable=True)
         )
@@ -505,17 +504,15 @@ def imagebind_huge(pretrained=False, store_path=r'.checkpoints'):
     )
 
     if pretrained:
-        if not os.path.exists("{}/imagebind_huge.pth".format(store_path)):
-            print(
-                "Downloading imagebind weights to {}/imagebind_huge.pth ...".format(store_path)
-            )
+        if not os.path.exists(f"{store_path}/imagebind_huge.pth"):
+            print(f"Downloading imagebind weights to {store_path}/imagebind_huge.pth ...")
             os.makedirs(store_path, exist_ok=True)
             torch.hub.download_url_to_file(
                 "https://dl.fbaipublicfiles.com/imagebind/imagebind_huge.pth",
-                "{}/imagebind_huge.pth".format(store_path),
+                f"{store_path}/imagebind_huge.pth",
                 progress=True,
             )
 
-        model.load_state_dict(torch.load("{}/imagebind_huge.pth".format(store_path)))
+        model.load_state_dict(torch.load(f"{store_path}/imagebind_huge.pth"))
 
     return model, 1024

@@ -80,9 +80,7 @@ class TextFcLayer(nn.Module):
         if isinstance(self.model, nn.ModuleList):
             assert len(self.model) == x.shape[1] == self.num_input_tokens, (
             len(self.model), x.shape, self.num_input_tokens)
-            outputs = []
-            for i in range(self.num_input_tokens):
-                outputs.append(self.model[i](x[:, i, :]))  # (N, D)
+            outputs = [self.model[i](x[:, i, :]) for i in range(self.num_input_tokens)]
             outputs = torch.stack(outputs, dim=1)  # (N, T_I_V_A.txt, D)
         elif self.mode == 'transformer':
             # print("x.size: ", x.size())
@@ -97,10 +95,7 @@ class TextFcLayer(nn.Module):
             # print('layer tfm model: ', x)
 
             if outputs.shape[1] != self.num_output_tokens and self.mode == 'linear':
-                if self.mode == 'linear':
-                    outputs = outputs[:, :self.num_output_tokens, :]
-                else:
-                    raise NotImplementedError
+                outputs = outputs[:, :self.num_output_tokens, :]
         elif self.mode == 'qformer':
             x = x + input_embs
             x = self.fc(x)

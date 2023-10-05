@@ -52,7 +52,7 @@ if __name__ == '__main__':
         os.makedirs(clip_output_dir, exist_ok=True)
 
     # Get existing files, so that we don't recompute them.
-    existing_files = set([f.strip('.npy') for f in os.listdir(clip_output_dir)])
+    existing_files = {f.strip('.npy') for f in os.listdir(clip_output_dir)}
 
     caption_list = []
     name_list = []
@@ -67,10 +67,10 @@ if __name__ == '__main__':
                 caption_list.append(one_caption)
                 name_list.append(one_audio_name)
         pipe = AudioLDMPipeline.from_pretrained(ckpt_path, torch_dtype=dtype)
-        if not torch.cuda.is_available():
-            print('WARNING: using CPU, this will be slow!')
-        else:
+        if torch.cuda.is_available():
             pipe = pipe.to("cuda")
+        else:
+            print('WARNING: using CPU, this will be slow!')
     elif modality == 'image':
         print('extract image caption embedding')
         with open(data_path, 'r', encoding='utf-8') as f:
@@ -81,10 +81,10 @@ if __name__ == '__main__':
                 caption_list.append(one_caption)
                 name_list.append(one_image_name)
         pipe = StableDiffusionPipeline.from_pretrained(ckpt_path, torch_dtype=dtype)
-        if not torch.cuda.is_available():
-            print('WARNING: using CPU, this will be slow!')
-        else:
+        if torch.cuda.is_available():
             pipe = pipe.to("cuda")
+        else:
+            print('WARNING: using CPU, this will be slow!')
     elif modality == 'video':
         print('extract video caption embedding')
         with open(data_path, 'r', encoding='utf-8') as f:
@@ -95,11 +95,11 @@ if __name__ == '__main__':
                 caption_list.append(one_caption)
                 name_list.append(one_video_name)
         pipe = TextToVideoSDPipeline.from_pretrained(ckpt_path, torch_dtype=dtype)
-        if not torch.cuda.is_available():
-            print('WARNING: using CPU, this will be slow!')
-        else:
+        if torch.cuda.is_available():
             pipe = pipe.to("cuda")
 
+        else:
+            print('WARNING: using CPU, this will be slow!')
     print('Extract embeddings in batches.')
     num_batches = int(np.ceil(len(caption_list) / batch_size))
     for i in tqdm(range(num_batches)):
